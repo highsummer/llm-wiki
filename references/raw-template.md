@@ -1,5 +1,6 @@
 ---
 source: "{{URL or 'Direct input'}}"
+source-type: {{academic | internal | meeting-note | blog}}
 collected: {{YYYY-MM-DD}}
 published: {{YYYY-MM-DD or 'Unknown'}}
 ---

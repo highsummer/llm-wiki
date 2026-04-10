@@ -71,7 +71,12 @@ Fetch a source into `.wiki/raw/`, then compile it into `.wiki/<topic>/`. Always 
    - Slug from source title, kebab-case, max 60 characters.
    - Published date unknown → omit the date prefix from the file name (e.g., `descriptive-slug.md`). The metadata Published field still appears; set it to `Unknown`.
    - If a file with the same name already exists, append a numeric suffix (e.g., `descriptive-slug-2.md`).
-   - Include metadata header: source URL, collected date, published date.
+   - Include metadata header: source URL, source-type, collected date, published date.
+   - **`source-type` field** classifies the provenance of each raw file:
+     - `academic` — Peer-reviewed paper, journal article, or conference publication. **Default when omitted.**
+     - `internal` — Team experiments, internal reports, unpublished findings.
+     - `meeting-note` — Notes from research meetings, advisor discussions, lab sessions.
+     - `blog` — Blog posts, tutorials, non-peer-reviewed technical writing.
    - Preserve original text. Clean formatting noise. Do not rewrite opinions.
 
    See `references/raw-template.md` for the exact format.
@@ -118,9 +123,19 @@ These are not mutually exclusive. A single source may warrant merging into one a
 
 See `references/article-template.md` for article format. Key points:
 - YAML frontmatter with `tags`, `created`, `updated` fields.
-- Sources field in frontmatter: author, organization, or publication name + date, semicolon-separated.
+- Sources field in frontmatter: author, organization, or publication name + date, semicolon-separated. **Prefix non-academic sources with their type marker:** `[Internal]`, `[Meeting]`, or `[Blog]`. Academic sources have no prefix (default). Example: `"[Meeting] Hwang (2026-02-04); Peng et al. (SIGGRAPH 2021)"`.
 - Raw field in frontmatter: markdown links to `.wiki/raw/` files, semicolon-separated.
 - Relative paths from `.wiki/<topic>/` to raw use `../raw/<topic>/<file>.md`.
+
+### Source Provenance in Article Body
+
+When compiling content from non-academic sources (raw files with `source-type` other than `academic`), mark the claims in the article body with an inline provenance tag:
+
+- `**[Internal]**` for internal experiments/reports
+- `**[Meeting]**` for meeting notes
+- `**[Blog]**` for blog/non-peer-reviewed sources
+
+Place the tag at the start of the paragraph or section that relies on the non-academic source. Academic-sourced content carries no tag (it is the default). This ensures readers can distinguish "Paper X reports Y" from "Our team observed Y" at a glance.
 
 ### Cascade Updates
 
@@ -313,10 +328,14 @@ Search the wiki and answer questions. Triggers:
 - "Summarize everything related to Y"
 - "Compare A and B based on my wiki"
 
+### Source Scope Filtering
+
+When the user specifies a source scope — e.g., "학술 연구 기준으로", "논문을 바탕으로", "based on papers" — restrict the answer to claims originating from `academic` sources only. Exclude or clearly separate content marked with `**[Internal]**`, `**[Meeting]**`, or `**[Blog]**` provenance tags. If no scope is specified, use all sources equally but still preserve provenance markers in the answer when citing non-academic claims.
+
 ### Steps
 
 1. Read `.wiki/index.md` to locate relevant articles.
-2. Read those articles and synthesize an answer.
+2. Read those articles and synthesize an answer. **Respect source scope filtering** if the user specified one — skip paragraphs/sections tagged with non-matching provenance markers.
 3. Prefer wiki content over your own training knowledge. Cite sources with markdown links: `[Article Title](.wiki/topic/article.md)` (project-root-relative paths for in-conversation citations; within `.wiki/` files, use paths relative to the current file).
 4. Output the answer in the conversation.
 
