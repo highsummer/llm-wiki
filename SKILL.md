@@ -1,6 +1,6 @@
 ---
 name: llm-wiki
-description: "Use when building or maintaining a personal LLM-powered knowledge base. Triggers: ingesting sources, querying wiki knowledge, linting wiki quality, mining insights, 'add to wiki', 'what do I know about', 'ingest', 'lint wiki', 'insight mining', or any mention of 'LLM wiki'."
+description: "Use when building or maintaining a personal LLM-powered knowledge base. Triggers: ingesting sources, querying wiki knowledge, linting wiki quality, mining insights, active reference collection, 'add to wiki', 'what do I know about', 'ingest', 'lint wiki', 'insight mining', 'research', 'find papers', 'collect references', 'survey literature', or any mention of 'LLM wiki'."
 ---
 
 # LLM Wiki
@@ -186,6 +186,123 @@ Append to `.wiki/log.md`:
 ```
 
 Omit `- Updated:` lines when no cascade updates occur.
+
+---
+
+## Research
+
+Active discovery and ingestion of CS research papers. Instead of the user providing individual URLs, the LLM searches for relevant papers from top CS venues, evaluates them, and ingests the best candidates into the wiki.
+
+**Triggers:**
+- "research X"
+- "find papers about Y"
+- "collect references on Z"
+- "survey the literature on W"
+
+### Parameters
+
+| Parameter | Default | Description |
+|-----------|---------|-------------|
+| topic | (required) | Research focus — a question, concept, or subfield |
+| scope | `standard` | `quick` (3–5 papers), `standard` (5–10), `deep` (10–20) |
+| venues | CS top venues | Restrict to specific venues. Default: CVPR, ICCV, ECCV, NeurIPS, ICLR, ICML, SIGGRAPH, SIGGRAPH Asia, TOG, TPAMI |
+| date_range | Last 3 years | Search period |
+| exclusions | none | Papers or subtopics to skip |
+
+### Pipeline
+
+#### Step 1: SCOPE
+
+1. Read `.wiki/index.md` to understand what the wiki already covers.
+2. Decompose the topic into search angles:
+   - Core methods and techniques
+   - Key datasets and benchmarks
+   - Competing or alternative approaches
+   - Recent extensions and follow-up work
+3. Identify which existing wiki topics overlap (to avoid redundant ingestion).
+4. Present the scope to the user as a brief confirmation before proceeding. If the user redirects, adjust. If no response within the conversational turn, proceed.
+
+#### Step 2: PLAN
+
+Generate search queries targeting multiple channels:
+
+- **Venue-specific**: `site:openreview.net`, `site:openaccess.thecvf.com`, `site:arxiv.org`
+- **Semantic**: Natural-language queries capturing the research question from different angles
+- **Citation-chain**: If the wiki already has related papers, search for works that cite or are cited by them
+- **Recency-filtered**: Date-constrained queries for the specified range
+
+Produce 5–15 queries depending on scope.
+
+#### Step 3: RETRIEVE
+
+Execute searches in parallel:
+
+1. Run all planned queries using WebSearch (or available search tools) concurrently.
+2. For each result, extract: title, authors, venue, year, URL, abstract (if available).
+3. Deduplicate by title similarity.
+4. Score each candidate for source quality.
+
+**Source quality scoring** uses venue tiers for CS papers:
+
+| Tier | Score | Venues |
+|------|-------|--------|
+| Tier-1 | 95 | CVPR, ICCV, ECCV, NeurIPS, ICLR, ICML, SIGGRAPH, TOG |
+| Tier-2 | 85 | AAAI, IJCAI, RSS, CoRL, ICRA, TPAMI, IJCV, 3DV, WACV |
+| Tier-3 | 75 | Workshop papers at Tier-1 venues, well-cited arXiv preprints |
+| Unranked arXiv | 55 | arXiv without venue publication |
+
+Non-academic sources (blog posts, technical reports without peer review) score 55 or below. Prefer peer-reviewed venue papers whenever available.
+
+**Quality thresholds** (minimum candidates before proceeding):
+- `quick`: 8+ candidates
+- `standard`: 15+ candidates
+- `deep`: 25+ candidates
+
+If thresholds are not met, broaden queries and retry once. If still insufficient, proceed with what is available and note the gap.
+
+#### Step 4: GATE
+
+Evaluate each candidate on five criteria and decide accept/reject:
+
+1. **Venue quality** — Tier-1/2 venues get priority. Unranked arXiv accepted only if highly relevant and no better alternative exists.
+2. **Relevance** — Does the abstract/title match the research scope? (LLM judgment)
+3. **Redundancy** — Does the wiki already cover this paper? Check `.wiki/raw/` filenames and existing article content.
+4. **Recency** — Prefer recent work, but accept seminal older papers that are foundational to the topic.
+5. **Diversity** — Ensure coverage across subtopics identified in SCOPE. Do not over-collect from a single subtopic.
+
+Rank candidates and accept the top N based on scope (`quick`: 3–5, `standard`: 5–10, `deep`: 10–20).
+
+#### Step 5: INGEST (batch)
+
+For each accepted paper, run the standard **Ingest** pipeline (Fetch → Compile → Cascade Updates → Post-Ingest).
+
+Processing order: cluster papers by topic directory to minimize redundant cascade scans.
+
+After all papers are ingested:
+- Check Overview page triggers (3+ articles in a directory → create or update `_overview.md`).
+- Check Synthesis page triggers (same concept across 3+ topics → create or update synthesis page).
+
+### Post-Research
+
+**Conversation output:**
+
+Present to the user:
+- Candidate table: title, venue, year, quality score, accepted/rejected, reason.
+- List of wiki articles created or updated.
+- Any new Overview or Synthesis pages generated.
+- Suggested follow-up: narrower research topics or wiki queries to explore further.
+
+**Wiki log:**
+
+```
+## [YYYY-MM-DD] research | <topic>
+- Scope: <quick/standard/deep>
+- Candidates: <N> found, <M> accepted
+- Created: <new article titles>
+- Updated: <cascade-updated article titles>
+- New overview: <if any>
+- New synthesis: <if any>
+```
 
 ---
 
@@ -384,6 +501,6 @@ Append to `.wiki/log.md`:
 - YAML frontmatter on every wiki article with at minimum `tags`, `created`, `updated` fields.
 - Today's date for log entries, Collected dates, and Archived dates. Updated dates reflect when the article's knowledge content last changed. Published dates come from the source (use `Unknown` when unavailable).
 - Inside `.wiki/` files, all markdown links use paths relative to the current file. In conversation output, use project-root-relative paths (e.g., `.wiki/topic/article.md`).
-- Ingest updates both `.wiki/index.md` and `.wiki/log.md`. Archive (from Query) updates both. Lint updates `.wiki/log.md` (and `.wiki/index.md` only when auto-fixing index entries). Queries may perform insight-driven updates to existing articles (see Query > Insight-Driven Updates).
+- Ingest updates both `.wiki/index.md` and `.wiki/log.md`. Research runs batch Ingest internally (same update rules apply). Archive (from Query) updates both. Lint updates `.wiki/log.md` (and `.wiki/index.md` only when auto-fixing index entries). Queries may perform insight-driven updates to existing articles (see Query > Insight-Driven Updates).
 - Tag taxonomy: lowercase, hyphenated. Every article must include exactly one page-type tag (`summary`, `concept`, `entity`, `comparison`, `overview`, `synthesis`, `archive`). Additional domain tags freely: `method`, `dataset`, `guide`, `benchmark`, etc.
 - Excluded from Obsidian graph/search by convention: `.wiki/raw/`, `.wiki/log.md`. Configure via Obsidian Settings → Files and links → Excluded files if desired.

@@ -14,9 +14,10 @@ Tell Claude Code to ingest a source — a URL, a paper, a file. It creates `.wik
 
 ```
 "ingest https://arxiv.org/abs/1803.10122"    # add a source
-"what do I know about world models?"      # query the wiki
-"insight mining"                              # explore for non-obvious patterns
-"lint wiki"                                   # health-check
+"research scene-aware motion generation"     # find and ingest papers from top CS venues
+"what do I know about world models?"         # query the wiki
+"insight mining"                             # explore for non-obvious patterns
+"lint wiki"                                  # health-check
 ```
 
 The `.wiki/` directory is an [Obsidian](https://obsidian.md/) vault. Open it in Obsidian to browse articles, follow cross-references, and use graph view. The LLM writes; you read.
@@ -27,11 +28,12 @@ The original is intentionally abstract. This skill fills in implementation detai
 
 - **Page type system.** Seven explicit types (`summary`, `concept`, `entity`, `comparison`, `overview`, `synthesis`, `archive`) with creation triggers, so the wiki self-organizes rather than becoming a flat list of summaries.
 - **Overview and synthesis pages.** Auto-generated when topic directories reach 3+ articles (overview) or a pattern spans 3+ topics (synthesis). The "compounding" part of the original that didn't happen naturally without explicit rules.
-- **Insight Mining.** A fourth operation alongside Ingest/Query/Lint. Undirected exploration across all articles to surface non-obvious connections, contradictions, gaps, and hypotheses.
+- **Research.** Active paper discovery — searches top CS venues, scores candidates by venue tier, and batch-ingests accepted papers into the wiki.
+- **Insight Mining.** Undirected exploration across all articles to surface non-obvious connections, contradictions, gaps, and hypotheses.
 - **Insight-driven Query updates.** Query can now write back cross-article connections and corrections it discovers while answering, instead of being read-only.
 - **OpenReview collection.** For paper sources, appends public peer reviews to the raw file during Ingest.
 - **Deterministic lint.** Lint split into auto-fixable checks (broken links, missing index entries) and heuristic checks (reported only).
 
 ## Acknowledgments
 
-Core idea by [Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). Heavily influenced by [Astro-Han/karpathy-llm-wiki](https://github.com/Astro-Han/karpathy-llm-wiki).
+Core idea by [Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). Heavily influenced by [Astro-Han/karpathy-llm-wiki](https://github.com/Astro-Han/karpathy-llm-wiki). Research pipeline adapted from [claude-deep-research-skill](https://github.com/199-biotechnologies/claude-deep-research-skill.git).
