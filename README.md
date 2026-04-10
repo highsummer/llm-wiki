@@ -36,4 +36,4 @@ The original is intentionally abstract. This skill fills in implementation detai
 
 ## Acknowledgments
 
-Core idea by [Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). Heavily influenced by [Astro-Han/karpathy-llm-wiki](https://github.com/Astro-Han/karpathy-llm-wiki). Research pipeline adapted from [claude-deep-research-skill](https://github.com/199-biotechnologies/claude-deep-research-skill.git).
+Core idea by [Andrej Karpathy](https://gist.github.com/karpathy/442a6bf555914893e9891c11519de94f). Heavily influenced by [Astro-Han/karpathy-llm-wiki](https://github.com/Astro-Han/karpathy-llm-wiki). Research pipeline adapted from [199-biotechnologies/claude-deep-research-skill](https://github.com/199-biotechnologies/claude-deep-research-skill.git).
